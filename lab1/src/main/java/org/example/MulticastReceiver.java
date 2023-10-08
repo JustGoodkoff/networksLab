@@ -15,59 +15,56 @@ public class MulticastReceiver extends Thread {
     private String multicastAddress;
     protected byte[] buf = new byte[256];
 
-    MulticastReceiver(String var1, String var2) {
-        this.id = var2;
-        this.multicastAddress = var1;
+    MulticastReceiver(String id, String address) {
+        this.id = id;
+        this.multicastAddress = address;
     }
 
     public void run() {
-        InetAddress var1 = null;
+        InetAddress address = null;
 
         try {
             this.socket = new MulticastSocket(6969);
-            var1 = InetAddress.getByName(this.multicastAddress);
-            this.socket.joinGroup(var1);
-        } catch (IOException var5) {
-            throw new RuntimeException(var5);
+            address = InetAddress.getByName(this.multicastAddress);
+            this.socket.joinGroup(address);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         while(true) {
-            DatagramPacket var2 = new DatagramPacket(this.buf, this.buf.length);
+            DatagramPacket packet = new DatagramPacket(this.buf, this.buf.length);
 
             try {
-                this.socket.receive(var2);
+                this.socket.receive(packet);
                 System.out.println(this.socket.getNetworkInterface().getName());
-                String var3;
-                if (var2.getData()[0] == 50) {
-                    var3 = new String(var2.getData(), 1, var2.getLength() - 1);
-                    if (var3.equals(this.id)) {
-                        Main.ips.remove(var3);
+                String data;
+                if (packet.getData()[0] == 0) {
+                    data = new String(packet.getData(), 1, packet.getLength() - 1);
+                    if (data.equals(this.id)) {
+                        Main.ips.remove(data);
                         break;
                     }
 
-                    Main.ips.remove(var3);
+                    Main.ips.remove(data);
                 } else {
-                    var3 = new String(var2.getData(), 3, var2.getLength() - 3);
-                    PrintStream var10000 = System.out;
-                    String var10001 = String.valueOf(var2.getAddress());
-                    var10000.println(var10001 + " " + var2.getPort() + " " + var3);
-                    if (Main.ips.containsKey(var3)) {
-                        Main.ips.replace(var3, (new Date()).getTime());
+                    data = new String(packet.getData(), 3, packet.getLength() - 3);
+                    if (Main.ips.containsKey(data)) {
+                        Main.ips.replace(data, (new Date()).getTime());
                     } else {
-                        Main.ips.put(var3, (new Date()).getTime());
+                        Main.ips.put(data, (new Date()).getTime());
                     }
 
                     System.out.println(Main.ips);
                 }
-            } catch (IOException var6) {
-                throw new RuntimeException(var6);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
 
         try {
-            this.socket.leaveGroup(var1);
-        } catch (IOException var4) {
-            throw new RuntimeException(var4);
+            this.socket.leaveGroup(address);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         this.socket.close();
